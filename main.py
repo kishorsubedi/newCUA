@@ -12,6 +12,7 @@ from pydantic import BaseModel
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.concurrency import run_in_threadpool
 
 import sys
 print(sys.executable)
@@ -52,7 +53,7 @@ def root():
     return {"message": "Backend running! Send POST requests to /chat with a query."}
 
 @app.post("/chat")
-def run_agent(request: ChatRequest):
+async def run_agent(request: ChatRequest):
     # Choose environment
     if request.env == "playwright":
         env_instance = PlaywrightComputer(
@@ -68,17 +69,20 @@ def run_agent(request: ChatRequest):
     else:
         return {"error": f"Unknown environment: {request.env}"}
 
-    # Run agent
-    with env_instance as browser_computer:
-        agent = BrowserAgent(
-            browser_computer=browser_computer,
-            query=request.query,
-            model_name=request.model,
-        )
-        agent.agent_loop()
+    # Run the agent in a separate thread
+    def agent_task():
+        with env_instance as browser_computer:
+            agent = BrowserAgent(
+                browser_computer=browser_computer,
+                query=request.query,
+                model_name=request.model,
+            )
+            agent.agent_loop()
+
+    # Run synchronous task in threadpool
+    await run_in_threadpool(agent_task)
 
     return {"result": "Task completed by the agent."}
-
 # ---------------- Run server ----------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))  # Render provides PORT env variable
