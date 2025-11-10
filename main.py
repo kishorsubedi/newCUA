@@ -76,7 +76,7 @@ async def run_agent(request: ChatRequest):
             query=request.query,
             model_name=request.model,
         )
-        await agent.agent_loop()  # <-- agent_loop must be async
+        await run_in_threadpool(agent.agent_loop)
 
     return {"result": "Task completed by the agent."}
 
