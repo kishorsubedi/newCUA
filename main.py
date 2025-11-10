@@ -13,6 +13,10 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import sys
+print(sys.executable)
+print(sys.path)
+print(genai.__version__)
 # ---------------- FastAPI ----------------
 app = FastAPI(title="Gemini Browser Agent")
 
