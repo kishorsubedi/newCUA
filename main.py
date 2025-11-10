@@ -69,20 +69,17 @@ async def run_agent(request: ChatRequest):
     else:
         return {"error": f"Unknown environment: {request.env}"}
 
-    # Run the agent in a separate thread
-    def agent_task():
-        with env_instance as browser_computer:
-            agent = BrowserAgent(
-                browser_computer=browser_computer,
-                query=request.query,
-                model_name=request.model,
-            )
-            agent.agent_loop()
-
-    # Run synchronous task in threadpool
-    await run_in_threadpool(agent_task)
+    # Run the agent using async context
+    async with env_instance as browser_computer:
+        agent = BrowserAgent(
+            browser_computer=browser_computer,
+            query=request.query,
+            model_name=request.model,
+        )
+        await agent.agent_loop()  # <-- agent_loop must be async
 
     return {"result": "Task completed by the agent."}
+
 # ---------------- Run server ----------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))  # Render provides PORT env variable
